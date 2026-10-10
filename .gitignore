@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.sites-runtime/
+.sites-checkout/
+.sites-checkout-*/
+*.tsbuildinfo
+.DS_Store
