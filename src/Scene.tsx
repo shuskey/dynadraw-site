@@ -3,6 +3,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { Grid, OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import { Color, Group, Mesh, Quaternion, Vector3 } from 'three';
 import { evaluate, type Action } from './engine';
+import Ink from './Ink';
 
 const up = new Vector3(0, 1, 0);
 function Rod({ index, actions, time, selected, drawing }: { index: number; actions: Action[]; time: { current: number }; selected: string | null; drawing: { current: ReturnType<typeof evaluate> } }) {
@@ -23,12 +24,15 @@ function Rod({ index, actions, time, selected, drawing }: { index: number; actio
   const color = selected === staticSegment?.id ? '#ffffff' : staticSegment?.color;
   return <group ref={ref}><mesh ref={mesh} castShadow><cylinderGeometry args={[0.075, 0.075, 1, 12]}/><meshStandardMaterial color={color} roughness={0.32} metalness={0.12} emissive={new Color(color)} emissiveIntensity={selected === staticSegment?.id ? 0.15 : 0}/></mesh><mesh position={[0, 0, 0]}><sphereGeometry args={[0.095, 12, 12]}/><meshStandardMaterial color={color}/></mesh></group>;
 }
-function Drawing({ actions, playing, speed, cursor, selected, reset }: { actions: Action[]; playing: boolean; speed: number; cursor: number; selected: string | null; reset: number }) {
+function Drawing({ actions, playing, speed, cursor, selected, reset, inkReset }: { actions: Action[]; playing: boolean; speed: number; cursor: number; selected: string | null; reset: number; inkReset: number }) {
   const drawing = useRef(evaluate(actions, 0));
   const time = useRef(0);
   const previousReset = useRef(reset);
   const cursorMesh = useRef<Group>(null);
   const segmentCount = useMemo(() => actions.filter(a => a.kind === 'extend').length, [actions]);
+  // Ink lives in world space. Editing the structure starts a fresh trace;
+  // moving the marker, selecting a tile, or pausing preserves existing ink.
+  const inkRevision = useMemo(() => crypto.randomUUID(), [actions, reset, inkReset]);
   useFrame((_, dt) => {
     if (previousReset.current !== reset) { time.current = 0; previousReset.current = reset; }
     if (playing) time.current += Math.min(dt, 0.05) * speed;
@@ -41,6 +45,7 @@ function Drawing({ actions, playing, speed, cursor, selected, reset }: { actions
   }, -1);
   return <group position={[0, 0.15, 0]}>
     {Array.from({ length: segmentCount }, (_, index) => <Rod key={index} {...{ index, actions, time, selected, drawing }}/>) }
+    {evaluate(actions, time.current).pens.map(pen => <Ink key={`${inkRevision}-${pen.id}`} id={pen.id} color={pen.color} drawing={drawing} playing={playing}/>)}
     <group ref={cursorMesh}><mesh><sphereGeometry args={[0.14, 16, 16]}/><meshStandardMaterial color="#35483e" emissive="#dbef66" emissiveIntensity={0.7}/></mesh><mesh position={[0, 0.35, 0]}><coneGeometry args={[0.13, 0.25, 12]}/><meshStandardMaterial color="#35483e"/></mesh></group>
     <mesh><sphereGeometry args={[0.11, 16, 16]}/><meshStandardMaterial color="#3c5148"/></mesh>
   </group>;

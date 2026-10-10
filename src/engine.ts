@@ -1,9 +1,10 @@
 import { Quaternion, Vector3 } from 'three';
 
 export type Axis = 'x' | 'y' | 'z';
-export type Action = { id: string; kind: 'extend' | 'turn' | 'spin' | 'color'; value: number; axis: Axis; color: string };
+export type Action = { id: string; kind: 'extend' | 'turn' | 'spin' | 'color' | 'draw'; value: number; axis: Axis; color: string };
 export type Point = [number, number, number];
 export type Segment = { id: string; start: Point; end: Point; color: string };
+export type Pen = { id: string; position: Point; color: string };
 export const colors = ['#bdcf51', '#70b9a4', '#f1b46c', '#ad9cda', '#ee8b8b'];
 export const MAX_ACTIONS = 80;
 export function action(kind: Action['kind'], options: Partial<Omit<Action, 'id' | 'kind'>> = {}): Action {
@@ -15,11 +16,13 @@ export function evaluate(actions: Action[], time: number) {
   const rotation = new Quaternion();
   let color = colors[0];
   const segments: Segment[] = [];
+  const pens: Pen[] = [];
   const frames: { position: Point; direction: Point }[] = [];
   const frame = () => ({ position: position.toArray() as Point, direction: new Vector3(0, 1, 0).applyQuaternion(rotation).toArray() as Point });
   frames.push(frame());
   for (const item of actions) {
     if (item.kind === 'color') color = item.color;
+    else if (item.kind === 'draw') pens.push({ id: item.id, position: position.toArray() as Point, color });
     else if (item.kind === 'extend') {
       const start = position.toArray() as Point;
       position.add(new Vector3(0, item.value, 0).applyQuaternion(rotation));
@@ -30,9 +33,10 @@ export function evaluate(actions: Action[], time: number) {
     }
     frames.push(frame());
   }
-  return { segments, frames };
+  return { segments, frames, pens };
 }
 export function makeExample(name: string): Action[] {
+  if (name === 'Ink orbit') return [...makeExample('Orbit'), action('draw')];
   if (name === 'First steps') return [action('extend'), action('turn'), action('extend'), action('turn', { value: -90, axis: 'x' }), action('color', { color: colors[1] }), action('extend')];
   if (name === 'Orbit') return [action('extend', { value: 1 }), action('spin', { axis: 'y', value: 40 }), action('turn', { axis: 'z', value: 70 }), action('extend', { value: 2 }), action('spin', { axis: 'x', value: -55 }), action('color', { color: colors[3] }), action('extend', { value: 1.5 }), action('turn', { value: 65 }), action('extend', { value: 1 })];
   const result = [action('spin', { axis: 'y', value: 22 }), action('turn', { axis: 'z', value: -25 })];
@@ -46,9 +50,10 @@ export function label(item: Action) {
   if (item.kind === 'extend') return 'Extend';
   if (item.kind === 'color') return 'Color';
   if (item.kind === 'spin') return 'Rotate';
+  if (item.kind === 'draw') return 'Draw';
   return item.axis === 'z' ? (item.value < 0 ? 'Turn right' : 'Turn left') : item.axis === 'x' ? 'Tilt' : 'Twist';
 }
-export function detail(item: Action) { return item.kind === 'color' ? item.color : item.kind === 'extend' ? `${item.value} units` : `${item.value}°${item.kind === 'spin' ? '/s' : ''} · ${item.axis.toUpperCase()}`; }
+export function detail(item: Action) { return item.kind === 'draw' ? 'Continuous ink' : item.kind === 'color' ? item.color : item.kind === 'extend' ? `${item.value} units` : `${item.value}°${item.kind === 'spin' ? '/s' : ''} · ${item.axis.toUpperCase()}`; }
 export function validDocument(value: unknown): value is Action[] {
-  return Array.isArray(value) && value.length <= MAX_ACTIONS && new Set(value.map(a => a?.id)).size === value.length && value.every(a => a && typeof a.id === 'string' && ['extend', 'turn', 'spin', 'color'].includes(a.kind) && ['x', 'y', 'z'].includes(a.axis) && typeof a.value === 'number' && Number.isFinite(a.value) && Math.abs(a.value) <= 360 && (a.kind !== 'extend' || (a.value >= 0.2 && a.value <= 4)) && /^#[0-9a-f]{6}$/i.test(a.color));
+  return Array.isArray(value) && value.length <= MAX_ACTIONS && new Set(value.map(a => a?.id)).size === value.length && value.every(a => a && typeof a.id === 'string' && ['extend', 'turn', 'spin', 'color', 'draw'].includes(a.kind) && ['x', 'y', 'z'].includes(a.axis) && typeof a.value === 'number' && Number.isFinite(a.value) && Math.abs(a.value) <= 360 && (a.kind !== 'extend' || (a.value >= 0.2 && a.value <= 4)) && /^#[0-9a-f]{6}$/i.test(a.color));
 }
