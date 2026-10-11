@@ -1,16 +1,16 @@
 import { Quaternion, Vector3 } from 'three';
-import { modelInfo, models, type ModelId } from './models';
+import { modelInfo, models, supportsAutoHeading, type ModelId } from './models';
 
 export type Axis = 'x' | 'y' | 'z';
-export type Action = { id: string; kind: 'extend' | 'turn' | 'spin' | 'color' | 'draw' | 'object'; value: number; axis: Axis; color: string; model?: ModelId; angle?: number };
+export type Action = { id: string; kind: 'extend' | 'turn' | 'spin' | 'color' | 'draw' | 'object'; value: number; axis: Axis; color: string; model?: ModelId; angle?: number; autoHeading?: boolean };
 export type Point = [number, number, number];
 export type Segment = { id: string; start: Point; end: Point; color: string };
 export type Pen = { id: string; position: Point; color: string };
-export type ObjectInstance = { id: string; model: ModelId; position: Point; rotation: [number, number, number, number]; size: number; color?: string };
+export type ObjectInstance = { id: string; model: ModelId; position: Point; rotation: [number, number, number, number]; size: number; color?: string; autoHeading: boolean };
 export const colors = ['#bdcf51', '#70b9a4', '#f1b46c', '#ad9cda', '#ee8b8b'];
 export const MAX_ACTIONS = 80;
 export function action(kind: Action['kind'], options: Partial<Omit<Action, 'id' | 'kind'>> = {}): Action {
-  return { id: crypto.randomUUID(), kind, value: kind === 'object' ? 1 : kind === 'extend' ? 1.4 : kind === 'spin' ? 30 : 45, axis: 'z', color: colors[0], ...(kind === 'object' ? { model: 'rocket' as const, angle: 0 } : {}), ...options };
+  return { id: crypto.randomUUID(), kind, value: kind === 'object' ? 1 : kind === 'extend' ? 1.4 : kind === 'spin' ? 30 : 45, axis: 'z', color: colors[0], ...(kind === 'object' ? { model: 'rocket' as const, angle: 0, ...(supportsAutoHeading(options.model) ? { autoHeading: true } : {}) } : {}), ...options };
 }
 const axes = { x: new Vector3(1, 0, 0), y: new Vector3(0, 1, 0), z: new Vector3(0, 0, 1) };
 export function evaluate(actions: Action[], time: number) {
@@ -29,7 +29,7 @@ export function evaluate(actions: Action[], time: number) {
     else if (item.kind === 'object') {
       const model = item.model || 'rocket';
       const orientation = rotation.clone().multiply(new Quaternion().setFromAxisAngle(axes[item.axis], (item.angle || 0) * Math.PI / 180));
-      objects.push({ id: item.id, model, position: position.toArray() as Point, rotation: orientation.toArray(), size: item.value, ...(modelInfo(model).inheritsColor ? { color } : {}) });
+      objects.push({ id: item.id, model, position: position.toArray() as Point, rotation: orientation.toArray(), size: item.value, autoHeading: supportsAutoHeading(model) && item.autoHeading !== false, ...(modelInfo(model).inheritsColor ? { color } : {}) });
     }
     else if (item.kind === 'extend') {
       const start = position.toArray() as Point;
@@ -66,5 +66,5 @@ export function label(item: Action) {
 }
 export function detail(item: Action) { return item.kind === 'object' ? `${item.value}× · ${modelInfo(item.model).inheritsColor ? 'drawing color' : 'built-in colors'}` : item.kind === 'draw' ? 'Continuous ink' : item.kind === 'color' ? item.color : item.kind === 'extend' ? `${item.value} units` : `${item.value}°${item.kind === 'spin' ? '/s' : ''} · ${item.axis.toUpperCase()}`; }
 export function validDocument(value: unknown): value is Action[] {
-  return Array.isArray(value) && value.length <= MAX_ACTIONS && new Set(value.map(a => a?.id)).size === value.length && value.every(a => a && typeof a.id === 'string' && ['extend', 'turn', 'spin', 'color', 'draw', 'object'].includes(a.kind) && ['x', 'y', 'z'].includes(a.axis) && typeof a.value === 'number' && Number.isFinite(a.value) && Math.abs(a.value) <= 360 && (a.kind !== 'extend' || (a.value >= 0.2 && a.value <= 4)) && (a.kind !== 'object' || (models.some(m => m.id === a.model) && a.value >= 0.2 && a.value <= 3 && typeof a.angle === 'number' && Number.isFinite(a.angle) && Math.abs(a.angle) <= 180)) && /^#[0-9a-f]{6}$/i.test(a.color));
+  return Array.isArray(value) && value.length <= MAX_ACTIONS && new Set(value.map(a => a?.id)).size === value.length && value.every(a => a && typeof a.id === 'string' && ['extend', 'turn', 'spin', 'color', 'draw', 'object'].includes(a.kind) && ['x', 'y', 'z'].includes(a.axis) && typeof a.value === 'number' && Number.isFinite(a.value) && Math.abs(a.value) <= 360 && (a.kind !== 'extend' || (a.value >= 0.2 && a.value <= 4)) && (a.kind !== 'object' || (models.some(m => m.id === a.model) && a.value >= 0.2 && a.value <= 3 && typeof a.angle === 'number' && Number.isFinite(a.angle) && Math.abs(a.angle) <= 180)) && (a.autoHeading === undefined || typeof a.autoHeading === 'boolean') && /^#[0-9a-f]{6}$/i.test(a.color));
 }

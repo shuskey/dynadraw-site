@@ -10,3 +10,5 @@ export const models = [
 ] as const;
 export type ModelId = typeof models[number]['id'];
 export function modelInfo(id: ModelId = 'rocket') { return models.find(model => model.id === id)!; }
+
+export function supportsAutoHeading(id: ModelId = 'rocket') { return id === 'dragon' || id === 'rocket' || id === 'sword'; }

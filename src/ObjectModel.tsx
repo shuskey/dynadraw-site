@@ -54,7 +54,7 @@ export default function ObjectModel({ item, drawing, selected }: { item: ObjectI
     const current = drawing.current.objects.find(o => o.id === item.id);
     if (current && group.current) {
       group.current.position.set(...current.position);
-      if ((current.model === 'rocket' || current.model === 'dragon')) group.current.quaternion.copy(rocketHeading.current.update(current.position, current.rotation));
+      if (current.autoHeading) group.current.quaternion.copy(rocketHeading.current.update(current.position, current.rotation));
       else group.current.quaternion.set(...current.rotation);
       group.current.scale.setScalar(current.size);
     }

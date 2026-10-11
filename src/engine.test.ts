@@ -160,3 +160,25 @@ test('Dragon flight can be saved and keeps the pearl-chasing model on its animat
   assert.notDeepEqual(start.position, later.position);
   assert.equal(start.size, later.size);
 });
+
+test('auto heading defaults on for directional models and preserves explicit choices when saved', () => {
+  for (const model of ['dragon', 'rocket', 'sword'] as const) {
+    const object = action('object', { model });
+    assert.equal(object.autoHeading, true);
+    assert.equal(evaluate([object], 0).objects[0].autoHeading, true);
+    const legacy = { ...object }; delete legacy.autoHeading;
+    assert.ok(validDocument([legacy]));
+    assert.equal(evaluate([legacy], 0).objects[0].autoHeading, true);
+    const manual = { ...object, autoHeading: false, angle: 60, axis: 'x' as const };
+    const restored = JSON.parse(JSON.stringify([manual]));
+    assert.ok(validDocument(restored));
+    const result = evaluate(restored, 0).objects[0];
+    assert.equal(result.autoHeading, false);
+    const expected = new Quaternion().setFromAxisAngle(new Vector3(1,0,0), Math.PI / 3);
+    assert.ok(new Quaternion(...result.rotation).angleTo(expected) < 1e-8);
+    assert.ok(!validDocument([{ ...object, autoHeading: 'false' }]));
+  }
+  for (const model of ['world', 'asteroid', 'disk', 'torus', 'ring'] as const) {
+    assert.equal(evaluate([action('object', { model, autoHeading: true })], 0).objects[0].autoHeading, false);
+  }
+});

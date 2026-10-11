@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import { models, modelInfo, type ModelId } from './models';
+import { models, modelInfo, supportsAutoHeading, type ModelId } from './models';
 import type { Action, Axis } from './engine';
 
 export function ObjectThumbnail({ model, color = '#bdcf51', size = 48 }: { model: ModelId; color?: string; size?: number }) {
@@ -18,5 +18,16 @@ export function ObjectChooser({ color, choose, close }: { color: string; choose:
   return <div className="modal-backdrop" onClick={close}><section className="object-modal" role="dialog" aria-modal="true" aria-labelledby="objects-title" onClick={e => e.stopPropagation()} onKeyDown={e => { if (e.key === 'Escape') close(); }}><button autoFocus className="icon-button modal-close" aria-label="Close object chooser" onClick={close}><X size={20}/></button><div className="eyebrow">A LITTLE CHARACTER FOR YOUR CREATION</div><h2 id="objects-title">Choose an object</h2><p>Attach it at the marker. The motion before it brings it to life.</p><div className="object-library">{models.map(model => <button key={model.id} onClick={() => choose(model.id)} aria-label={`Add ${model.name}`}><ObjectThumbnail model={model.id} color={color}/><strong>{model.name}</strong><span>{model.inheritsColor ? <><i style={{background:color}}/> Drawing color</> : 'Built-in colors'}</span></button>)}</div><small>Rings, toruses and disks use the color active at the marker. The other objects keep their own materials.</small></section></div>;
 }
 export function ObjectSettings({ selected, update }: { selected: Action; update: (patch: Partial<Action>) => void }) {
-  return <><label>Object<select className="model-select" aria-label="Object model" value={selected.model} onChange={e => update({ model: e.target.value as ModelId })}>{models.map(model => <option key={model.id} value={model.id}>{model.name}</option>)}</select></label><label>Size<input aria-label="Object size" type="number" min={0.2} max={3} step={0.1} value={selected.value} onChange={e => { const n = e.target.valueAsNumber; if (Number.isFinite(n)) update({ value: Math.max(0.2, Math.min(3,n)) }); }}/></label>{(selected.model === 'rocket' || selected.model === 'dragon') ? <span className="object-color-rule rocket-heading-rule">Auto heading · faces motion</span> : <><label>Orientation<input aria-label="Object orientation" type="number" min={-180} max={180} step={15} value={selected.angle || 0} onChange={e => { const n = e.target.valueAsNumber; if (Number.isFinite(n)) update({ angle: Math.max(-180,Math.min(180,n)) }); }}/></label><label>Axis<select aria-label="Object orientation axis" value={selected.axis} onChange={e => update({ axis: e.target.value as Axis })}><option value="x">X</option><option value="y">Y</option><option value="z">Z</option></select></label></>}<span className="object-color-rule">{modelInfo(selected.model).inheritsColor ? 'Uses drawing color' : 'Keeps built-in colors'}</span></>;
+  const canAutoHead = supportsAutoHeading(selected.model);
+  const autoHeading = canAutoHead && selected.autoHeading !== false;
+  return <>
+    <label>Object<select className="model-select" aria-label="Object model" value={selected.model} onChange={e => update({ model: e.target.value as ModelId })}>{models.map(model => <option key={model.id} value={model.id}>{model.name}</option>)}</select></label>
+    <label>Size<input aria-label="Object size" type="number" min={0.2} max={3} step={0.1} value={selected.value} onChange={e => { const n = e.target.valueAsNumber; if (Number.isFinite(n)) update({ value: Math.max(0.2, Math.min(3,n)) }); }}/></label>
+    {canAutoHead && <label className="auto-heading-toggle"><input type="checkbox" checked={autoHeading} onChange={e => update({ autoHeading: e.target.checked })}/>Auto heading · faces motion</label>}
+    {!autoHeading && <>
+      <label>Orientation<input aria-label="Object orientation" type="number" min={-180} max={180} step={15} value={selected.angle || 0} onChange={e => { const n = e.target.valueAsNumber; if (Number.isFinite(n)) update({ angle: Math.max(-180,Math.min(180,n)) }); }}/></label>
+      <label>Axis<select aria-label="Object orientation axis" value={selected.axis} onChange={e => update({ axis: e.target.value as Axis })}><option value="x">X</option><option value="y">Y</option><option value="z">Z</option></select></label>
+    </>}
+    <span className="object-color-rule">{modelInfo(selected.model).inheritsColor ? 'Uses drawing color' : 'Keeps built-in colors'}</span>
+  </>;
 }
