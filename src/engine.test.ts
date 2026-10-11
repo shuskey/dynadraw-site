@@ -118,3 +118,34 @@ test('rocket points along a compound animated orbit rather than the drawing arm'
     previous = current;
   }
 });
+
+
+test('rocket preserves roll through repeated circular flights across the old up-axis poles', () => {
+  const actions = [action('spin', { axis: 'y', value: 30 }), action('turn', { value: 45 }), action('turn', { value: 45 }), action('extend'), action('object', { model: 'rocket' })];
+  for (const fps of [30, 60, 120]) {
+    const heading = new RocketHeading();
+    let previous = evaluate(actions, 0).objects[0];
+    heading.update(previous.position, previous.rotation);
+    let last: Quaternion | undefined;
+    let initialDorsal: Vector3 | undefined;
+    for (let frame = 1; frame <= fps * 24; frame++) {
+      const current = evaluate(actions, frame / fps).objects[0];
+      const velocity = new Vector3(...current.position).sub(new Vector3(...previous.position)).normalize();
+      const rotation = heading.update(current.position, current.rotation).clone();
+      const dorsal = new Vector3(0, 0, 1).applyQuaternion(rotation);
+      if (!initialDorsal) initialDorsal = dorsal.clone();
+      assert.ok(new Vector3(0, 1, 0).applyQuaternion(rotation).dot(velocity) > 0.999999);
+      // This planar circle needs only the same small turn as its velocity, with
+      // no added axial roll. The old implementation jumped 180 degrees here.
+      if (last) assert.ok(last.angleTo(rotation) <= (30 / fps) * Math.PI / 180 + 1e-8);
+      if (frame > 1) {
+        const minimalTurn = new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0).applyQuaternion(last!), velocity);
+        assert.ok(dorsal.dot(new Vector3(0, 0, 1).applyQuaternion(last!).applyQuaternion(minimalTurn)) > 0.999999);
+      }
+      last = rotation;
+      previous = current;
+    }
+    // Two full orbits return to the same roll, without a half-orbit flip.
+    assert.ok(new Vector3(0, 0, 1).applyQuaternion(last!).dot(initialDorsal!) > 0.999);
+  }
+});
