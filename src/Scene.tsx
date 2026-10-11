@@ -34,6 +34,7 @@ function Drawing({ actions, playing, speed, cursor, selected, reset, inkReset }:
   // Ink lives in world space. Editing the structure starts a fresh trace;
   // moving the marker, selecting a tile, or pausing preserves existing ink.
   const inkRevision = useMemo(() => crypto.randomUUID(), [actions, reset, inkReset]);
+  const motionRevision = useMemo(() => crypto.randomUUID(), [actions, reset]);
   useFrame((_, dt) => {
     if (previousReset.current !== reset) { time.current = 0; previousReset.current = reset; }
     if (playing) time.current += Math.min(dt, 0.05) * speed;
@@ -47,7 +48,7 @@ function Drawing({ actions, playing, speed, cursor, selected, reset, inkReset }:
   return <group position={[0, 0.15, 0]}>
     {Array.from({ length: segmentCount }, (_, index) => <Rod key={index} {...{ index, actions, time, selected, drawing }}/>) }
     {evaluate(actions, time.current).pens.map(pen => <Ink key={`${inkRevision}-${pen.id}`} id={pen.id} color={pen.color} drawing={drawing} playing={playing}/>)}
-    {evaluate(actions, time.current).objects.map(item => <ObjectModel key={item.id} item={item} drawing={drawing} selected={selected === item.id}/>)}
+    {evaluate(actions, time.current).objects.map(item => <ObjectModel key={`${motionRevision}-${item.id}`} item={item} drawing={drawing} selected={selected === item.id}/>)}
     <group ref={cursorMesh}><mesh><sphereGeometry args={[0.14, 16, 16]}/><meshStandardMaterial color="#35483e" emissive="#dbef66" emissiveIntensity={0.7}/></mesh><mesh position={[0, 0.35, 0]}><coneGeometry args={[0.13, 0.25, 12]}/><meshStandardMaterial color="#35483e"/></mesh></group>
     <mesh><sphereGeometry args={[0.11, 16, 16]}/><meshStandardMaterial color="#3c5148"/></mesh>
   </group>;

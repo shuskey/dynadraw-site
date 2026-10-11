@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { CanvasTexture, DoubleSide, Group, IcosahedronGeometry, SRGBColorSpace, Shape } from 'three';
 import type { evaluate, ObjectInstance } from './engine';
 import type { ModelId } from './models';
+import { RocketHeading } from './rocketHeading';
 
 function World() {
   const texture = useMemo(() => {
@@ -46,9 +47,15 @@ export function ModelGeometry({ model, color }: { model: ModelId; color?: string
 }
 export default function ObjectModel({ item, drawing, selected }: { item: ObjectInstance; drawing: { current: ReturnType<typeof evaluate> }; selected: boolean }) {
   const group = useRef<Group>(null);
+  const rocketHeading = useRef(new RocketHeading());
   useFrame(() => {
     const current = drawing.current.objects.find(o => o.id === item.id);
-    if (current && group.current) { group.current.position.set(...current.position); group.current.quaternion.set(...current.rotation); group.current.scale.setScalar(current.size); }
+    if (current && group.current) {
+      group.current.position.set(...current.position);
+      if (current.model === 'rocket') group.current.quaternion.copy(rocketHeading.current.update(current.position, current.rotation));
+      else group.current.quaternion.set(...current.rotation);
+      group.current.scale.setScalar(current.size);
+    }
   });
   return <group ref={group}><ModelGeometry model={item.model} color={item.color}/>{selected && <mesh><sphereGeometry args={[1.15,12,8]}/><meshBasicMaterial color="#9aac6b" wireframe transparent opacity={0.25}/></mesh>}</group>;
 }

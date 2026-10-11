@@ -35,3 +35,5 @@ Ink grows in connected buffer chunks without discarding older points. Long sessi
 This first prototype supports up to 80 actions. It does not yet import the Unity command language or include branches, repeat groups, fading smoke, cloud saving, or shared galleries. Saving is browser-local and is separate for the local preview and the published Site.
 
 The first object collection uses original procedural models and a generated globe texture, with no external asset downloads. Models attach at the current drawing position without advancing it. Selecting an object shows an outline without tinting its materials. GLB importing is not yet implemented.
+
+Rockets face their direction of motion using successive positions, following the original Unity `RotateRocketScript`. World Z is the up reference, adapted to the new model's +Y nose axis. Paused or stationary rockets keep their last heading. Sequence edits and animation restart reset the position history so jumps are not interpreted as flight. Other objects retain their authored orientation.

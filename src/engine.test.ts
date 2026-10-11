@@ -1,8 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { action, evaluate, validDocument } from './engine';
+import { action, evaluate, makeExample, validDocument } from './engine';
 import { INK_CHUNK_SIZE, InkTrail } from './inkTrail';
 import { models } from './models';
+import { Quaternion, Vector3 } from 'three';
+import { RocketHeading } from './rocketHeading';
 
 test('a local turn changes the direction of subsequent segments', () => {
   const a = [action('extend', { value: 2 }), action('turn', { value: 90 }), action('extend', { value: 3 })];
@@ -81,4 +83,38 @@ test('objects follow motion without moving the drawing head', () => {
   assert.ok(Math.abs(Math.hypot(...result.objects[0].rotation) - 1) < 1e-8);
   assert.ok(!validDocument([{ ...a[2], model: 'unknown' }]));
   assert.ok(!validDocument([{ ...a[2], value: 100 }]));
+});
+
+test('rocket nose follows actual displacement, including poles and motion through the origin', () => {
+  for (const direction of [[1,0,0], [-1,0,0], [0,1,0], [0,-1,0], [0,0,1], [0,0,-1], [1,2,3]] as const) {
+    const heading = new RocketHeading();
+    heading.update([0,0,0], [0,0,0,1]);
+    const rotation = heading.update([...direction], [0,0,0,1]);
+    const nose = new Vector3(0,1,0).applyQuaternion(rotation);
+    assert.ok(nose.dot(new Vector3(...direction).normalize()) > 0.999999);
+    assert.ok(rotation.toArray().every(Number.isFinite));
+  }
+});
+
+test('rocket holds its last heading while stationary or paused', () => {
+  const heading = new RocketHeading();
+  heading.update([0,0,0], [0,0,0,1]);
+  const moving = heading.update([1,0,0], [0,0,0,1]).clone();
+  const authored = new Quaternion().setFromAxisAngle(new Vector3(1,0,0), 1).toArray();
+  assert.ok(heading.update([1,0,0], authored).angleTo(moving) < 1e-8);
+  assert.ok(new RocketHeading().update([1,0,0], authored).angleTo(new Quaternion(...authored)) < 1e-8);
+});
+
+test('rocket points along a compound animated orbit rather than the drawing arm', () => {
+  const actions = makeExample('Rocket ride');
+  const heading = new RocketHeading();
+  let previous = evaluate(actions, 0).objects[0];
+  heading.update(previous.position, previous.rotation);
+  for (let frame = 1; frame <= 240; frame++) {
+    const current = evaluate(actions, frame / 60).objects[0];
+    const velocity = new Vector3(...current.position).sub(new Vector3(...previous.position)).normalize();
+    const nose = new Vector3(0,1,0).applyQuaternion(heading.update(current.position, current.rotation));
+    assert.ok(nose.dot(velocity) > 0.999999);
+    previous = current;
+  }
 });
