@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Delete, ArrowUpRight, RotateCw, RotateCcw, Play, Pause, Undo2, Redo2, Trash2, Plus, ChevronDown, Check, Save, Expand, X, HelpCircle, Sparkles, Box, MousePointer2, Crosshair, PencilLine, Eraser } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Delete, ArrowUpRight, RotateCw, RotateCcw, Play, Pause, Undo2, Redo2, Trash2, Plus, ChevronDown, Check, Save, Expand, X, Info, Sparkles, Box, MousePointer2, Crosshair, PencilLine, Eraser, MessageSquare } from 'lucide-react';
 import Scene from './Scene';
 import { track } from './analytics';
 import { ObjectChooser, ObjectSettings } from './ObjectChooser';
@@ -9,6 +9,8 @@ import Glyph from './ActionGlyph';
 import { motionOptions } from './motionOptions';
 import MotionChooser from './MotionChooser';
 import MotionSettings from './MotionSettings';
+import Feedback from './Feedback';
+import About from './About';
 
 const STORAGE_KEY = 'dynadraw-studio-v1';
 type Editor = DrawingDocument & { cursor: number; selected: string | null };
@@ -23,6 +25,7 @@ export default function App() {
   const [playing, setPlaying] = useState(true), [speed, setSpeed] = useState(1);
   const [inkReset, setInkReset] = useState(0);
   const [reset, setReset] = useState(0), [cameraReset, setCameraReset] = useState(0);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [objectsOpen, setObjectsOpen] = useState(false);
   const [motionOpen, setMotionOpen] = useState(false);
   const [examplesOpen, setExamplesOpen] = useState(false), [help, setHelp] = useState(false);
@@ -61,7 +64,7 @@ export default function App() {
   function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ actions: editor.actions, mode: editor.mode })); track('Saved drawing'); notify('Drawing saved in this browser'); } catch { notify('Browser storage is unavailable. Please enable it to save.'); } }
   useEffect(() => {
     function key(event: KeyboardEvent) {
-      if ((event.target as HTMLElement)?.closest('input, select, textarea, [contenteditable="true"]') || help || objectsOpen || motionOpen) return;
+      if ((event.target as HTMLElement)?.closest('input, select, textarea, [contenteditable="true"]') || help || objectsOpen || motionOpen || feedbackOpen) return;
       const modifier = event.metaKey || event.ctrlKey;
       if (modifier && event.key.toLowerCase() === 'z') { event.preventDefault(); event.shiftKey ? redo() : undo(); }
       else if (modifier && event.key.toLowerCase() === 's') { event.preventDefault(); save(); }
@@ -84,7 +87,7 @@ export default function App() {
     <header className="topbar">
       <a className="brand" href="/" aria-label="DynaDraw Studio home"><span className="brand-mark"><Box size={23}/></span><span>DynaDraw<span className="brand-studio"> / studio</span></span></a>
       <span className="prototype-badge"><span/> EARLY PLAYGROUND</span>
-      <div className="header-actions"><button className="quiet help-button" onClick={() => setHelp(true)}><HelpCircle size={17}/> How it works</button><button className="save-button" onClick={save}><Save size={16}/> Save drawing</button></div>
+      <div className="header-actions"><button className="quiet feedback-button" onClick={() => setFeedbackOpen(true)}><MessageSquare size={17}/><span>Share feedback</span></button><button className="quiet help-button" aria-label="About DynaDraw" aria-haspopup="dialog" onClick={() => setHelp(true)}><Info size={17}/> About DynaDraw</button><button className="save-button" onClick={save}><Save size={16}/> Save drawing</button></div>
     </header>
     <main>
       <div className="intro"><div><div className="eyebrow">A LITTLE STRUCTURE. A LOT OF POSSIBILITY.</div><h1>Build a little motion<span>.</span></h1><p>Piece together simple actions. Watch something wonderful take shape.</p></div><div className="example-picker"><button className="example-button" aria-label="Try an example" aria-expanded={examplesOpen} onClick={() => setExamplesOpen(v => !v)}><Sparkles size={17}/><span>Try an example</span><ChevronDown size={16}/></button>{examplesOpen && <div className="example-menu">{['Dragon flight', 'Rocket ride', 'Ink orbit', 'Little helix', 'Orbit', 'First steps'].map(name => <button key={name} onClick={() => chooseExample(name)}>{name}<ArrowUpRight size={15}/></button>)}<small>Replaces the sequence. Undo brings it back.</small></div>}</div></div>
@@ -114,9 +117,10 @@ export default function App() {
       </section>
       <footer className="page-footer"><span><span className="tiny-mark">✳</span> A playground for curious minds.</span><span>DynaDraw, reimagined <span className="footer-dot">·</span> Prototype 01</span></footer>
     </main>
+    {feedbackOpen && <Feedback close={() => setFeedbackOpen(false)}/>}
     {objectsOpen && <ObjectChooser color={insertionColor} close={() => setObjectsOpen(false)} choose={model => { insert(action('object', {model})); setObjectsOpen(false); }}/>}
     {motionOpen && <MotionChooser close={() => setMotionOpen(false)} choose={item => { insert(item); setMotionOpen(false); }}/>}
     {toast && <div className="toast" role="status"><Check size={17}/>{toast}</div>}
-    {help && <div className="modal-backdrop" onClick={() => setHelp(false)}><section className="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-title" onClick={e => e.stopPropagation()} onKeyDown={e => { if (e.key === 'Escape') setHelp(false); }}><button autoFocus className="icon-button modal-close" aria-label="Close help" onClick={() => setHelp(false)}><X size={20}/></button><div className="eyebrow">YOUR FIRST MOVING IDEA</div><h2 id="help-title">A few actions.<br/>Endless possibilities.</h2><p><strong>Choose a starting mode.</strong> Surface starts forward along the grid; Space starts upward. Switch modes above the canvas. Tilts and twists can still take you into 3D in either mode.</p><p><strong>1. Build a sequence.</strong> Click an action to insert it at the marker. Extend draw moves forward and draws a column. Extend move advances the same distance without a column, so objects can fly freely. Turn left or right, tilt up or down, and twist left or right to change what follows.</p><p><strong>2. Give it motion.</strong> Choose Continuous motion for bouncing extensions or ongoing turns, tilts, and twists. You can also select a regular extension or turn and check Continuous motion. Adjust its reach or speed in the settings.</p><p><strong>3. Make it yours.</strong> Use the left and right arrows above the sequence, or tap between tiles, to move the insertion marker. The delete button removes the selected action, or the action just before the marker. Select a tile to adjust or delete it. Undo brings back earlier edits.</p><p><strong>Add an object.</strong> Choose a model, then select its tile to change size and orientation. Disks, toruses and rings use the active drawing color. Dragons, rockets, worlds, swords and asteroids keep their own colors.</p><p><strong>Draw with motion.</strong> Add Draw after moving segments to leave a continuous line in the color active at that point. Pause keeps the ink; Clear ink erases it. Editing the sequence or restarting begins a fresh trace.</p><p><strong>Keep your drawing.</strong> Save stores the action sequence in this browser. Ink is drawn live and is not saved. Examples replace the current sequence; you can undo that too.</p><button className="save-button" onClick={() => setHelp(false)}>Let’s make something <ArrowUpRight size={17}/></button></section></div>}
+    {help && <About close={() => setHelp(false)}/>}
   </div>;
 }

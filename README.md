@@ -54,3 +54,7 @@ Draw settings include a Thickness spinner (0.02–0.18 world units). Ink is a ro
 ## Analytics
 
 Plausible runs only on the published production hostname; localhost and previews do not send analytics. The private Plausible dashboard receives standard traffic metrics plus fixed custom event names: Started creating, Saved drawing, Used example, Added object, Used continuous motion, Used Draw, and 3D canvas failed. Each custom event is sent at most once per page load to measure feature adoption without counting every edit. Started creating means a sequence or mode edit, including loading an example. Save is recorded only after browser storage succeeds. No drawing contents or contact details are attached. Matching Custom event goals must be configured in Plausible to display conversions. Active interaction time is not implemented; standard visit duration is supplied by Plausible.
+
+## Feedback
+
+Share feedback in the header opens a panel with an optional rating, a required comment, and an optional reply address. Open email draft prepares a message to scott+sites@photoloom.com; visitors must send it from their email app. No submission is stored on the site, and no comments or reply addresses are sent to analytics. This version requires a configured email app; direct in-site delivery can be connected later.
