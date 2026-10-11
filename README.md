@@ -14,10 +14,12 @@ npm run dev
 ## Prototype 01
 
 - Insert extensions, turns on three axes, continuous rotation, and colors.
+- Add objects from a thumbnail chooser: Rocket, World, Asteroid, Sword, Disk, Torus, and Ring. Select a tile to change its model, size, or orientation. Try Rocket ride.
+- Disks, toruses, and rings inherit the color active at their place in the sequence. Rockets, worlds, asteroids, and swords keep their built-in materials.
 - Add Draw to attach a pen at that point in the sequence. Its motion leaves a continuous line in the color active there; earlier ink never fades or expires. Try the Ink orbit example.
 - Pause preserves ink. Clear ink erases only the trace; Restart resets motion and ink. Editing the sequence starts a fresh trace.
 - Click between tiles to move the insertion marker; select a tile to edit its settings.
-- Delete selected actions, undo/redo edits, and try three examples.
+- Delete selected actions, undo/redo edits, and try the built-in examples.
 - Orbit and zoom the camera; pause, restart, and change animation speed.
 - Save one drawing in this browser and restore it on the next visit.
 - Arrow keys move the marker; Backspace/Delete remove actions; Cmd/Ctrl+Z undoes; Cmd/Ctrl+Shift+Z redoes; Cmd/Ctrl+S saves.
@@ -31,3 +33,5 @@ Turns use local axes. A rotation affects all following segments, so multiple rot
 Ink grows in connected buffer chunks without discarding older points. Long sessions use memory in proportion to the amount drawn; stationary pens do not accumulate duplicate points. Save restores the action sequence, and ink is generated anew when the page opens.
 
 This first prototype supports up to 80 actions. It does not yet import the Unity command language or include branches, repeat groups, fading smoke, cloud saving, or shared galleries. Saving is browser-local and is separate for the local preview and the published Site.
+
+The first object collection uses original procedural models and a generated globe texture, with no external asset downloads. Models attach at the current drawing position without advancing it. Selecting an object shows an outline without tinting its materials. GLB importing is not yet implemented.

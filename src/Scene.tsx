@@ -4,6 +4,7 @@ import { Grid, OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import { Color, Group, Mesh, Quaternion, Vector3 } from 'three';
 import { evaluate, type Action } from './engine';
 import Ink from './Ink';
+import ObjectModel from './ObjectModel';
 
 const up = new Vector3(0, 1, 0);
 function Rod({ index, actions, time, selected, drawing }: { index: number; actions: Action[]; time: { current: number }; selected: string | null; drawing: { current: ReturnType<typeof evaluate> } }) {
@@ -46,6 +47,7 @@ function Drawing({ actions, playing, speed, cursor, selected, reset, inkReset }:
   return <group position={[0, 0.15, 0]}>
     {Array.from({ length: segmentCount }, (_, index) => <Rod key={index} {...{ index, actions, time, selected, drawing }}/>) }
     {evaluate(actions, time.current).pens.map(pen => <Ink key={`${inkRevision}-${pen.id}`} id={pen.id} color={pen.color} drawing={drawing} playing={playing}/>)}
+    {evaluate(actions, time.current).objects.map(item => <ObjectModel key={item.id} item={item} drawing={drawing} selected={selected === item.id}/>)}
     <group ref={cursorMesh}><mesh><sphereGeometry args={[0.14, 16, 16]}/><meshStandardMaterial color="#35483e" emissive="#dbef66" emissiveIntensity={0.7}/></mesh><mesh position={[0, 0.35, 0]}><coneGeometry args={[0.13, 0.25, 12]}/><meshStandardMaterial color="#35483e"/></mesh></group>
     <mesh><sphereGeometry args={[0.11, 16, 16]}/><meshStandardMaterial color="#3c5148"/></mesh>
   </group>;

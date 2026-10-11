@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { action, evaluate, validDocument } from './engine';
 import { INK_CHUNK_SIZE, InkTrail } from './inkTrail';
+import { models } from './models';
 
 test('a local turn changes the direction of subsequent segments', () => {
   const a = [action('extend', { value: 2 }), action('turn', { value: 90 }), action('extend', { value: 3 })];
@@ -59,4 +60,25 @@ test('a stationary pen does not accumulate duplicate ink', () => {
   trail.append([1, 2, 3]);
   for (let i = 0; i < 10000; i++) assert.equal(trail.append([1, 2, 3]), null);
   assert.equal(trail.chunks[0].length, 1);
+});
+
+
+test('only geometric objects inherit the active drawing color', () => {
+  for (const model of models) {
+    const a = [action('color', { color: '#123456' }), action('object', { model: model.id }), action('color', { color: '#abcdef' })];
+    assert.equal(evaluate(a, 0).objects[0].color, model.inheritsColor ? '#123456' : undefined, model.name);
+    assert.ok(validDocument(a));
+  }
+});
+
+test('objects follow motion without moving the drawing head', () => {
+  const a = [action('spin', { value: 90 }), action('extend', { value: 2 }), action('object', { model: 'rocket', value: 0.7, angle: 30, axis: 'x' }), action('draw')];
+  const result = evaluate(a, 1);
+  assert.ok(Math.abs(result.objects[0].position[0] + 2) < 1e-8);
+  assert.equal(result.objects[0].size, 0.7);
+  assert.equal(result.objects[0].color, undefined);
+  assert.deepEqual(result.pens[0].position, result.objects[0].position);
+  assert.ok(Math.abs(Math.hypot(...result.objects[0].rotation) - 1) < 1e-8);
+  assert.ok(!validDocument([{ ...a[2], model: 'unknown' }]));
+  assert.ok(!validDocument([{ ...a[2], value: 100 }]));
 });
