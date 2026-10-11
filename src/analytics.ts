@@ -1,5 +1,5 @@
 // Fixed event names only: never send drawing contents, saved data, or email addresses.
-export type AnalyticsEvent = 'Started creating' | 'Saved drawing' | 'Used example' | 'Added object' | 'Used continuous motion' | 'Used Draw' | '3D canvas failed';
+export type AnalyticsEvent = 'Started creating' | 'Saved drawing' | 'Used example' | 'Added object' | 'Used continuous motion' | 'Used Draw' | '3D canvas failed' | 'Feedback submitted';
 const sent = new Set<AnalyticsEvent>();
 export function track(event: AnalyticsEvent) {
   if (window.location.hostname !== 'dynadraw-studio.chummy-bard-6128.chatgpt.site' || sent.has(event)) return;

@@ -33,3 +33,5 @@
 .about-credits{margin:0 0 24px}.about-credits>div{padding:12px 0;border-bottom:1px solid var(--line)}.about-credits dt{font-size:11px;color:#7b8872;margin-bottom:6px}.about-credits dd{margin:0;font-size:15px;font-weight:600;color:#4f6243}
 .about-modal .modal-close{width:44px;height:44px;right:8px;top:8px}
 @media(max-width:720px){.about-modal{padding:30px 22px;max-height:calc(100dvh - 24px)}.about-modal .eyebrow{padding-right:24px}.about-modal h2{font-size:26px}.about-tabs{gap:2px}.about-tabs button{flex:1;padding:10px 7px;font-size:11px}.help-button{min-width:44px;min-height:44px}}
+
+.feedback-fields{display:flex;flex-direction:column;gap:10px}.feedback-honeypot{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}.feedback-error{font-size:12px;line-height:1.6;color:#a33d32}.feedback-success{padding-top:24px;color:#607a49}.feedback-success h3{color:#35483e}.feedback-success p{font-size:13px;line-height:1.6;margin:14px 0 22px}.feedback-fields:disabled{opacity:.7}
