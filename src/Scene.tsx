@@ -1,9 +1,10 @@
-import { Component, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Grid, OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import { Color, Group, Mesh, Quaternion, Vector3 } from 'three';
 import { evaluate, type Action, type DrawingMode } from './engine';
 import Ink from './Ink';
+import { track } from './analytics';
 import ObjectModel from './ObjectModel';
 
 const up = new Vector3(0, 1, 0);
@@ -54,14 +55,27 @@ function Drawing({ actions, playing, speed, cursor, selected, reset, inkReset, m
     <mesh><sphereGeometry args={[0.11, 16, 16]}/><meshStandardMaterial color="#3c5148"/></mesh>
   </group>;
 }
+function CanvasUnavailable() {
+  useEffect(() => {
+    // Canvas fallback children also mount on supported browsers. Probe support
+    // before counting a failure, then release this temporary context.
+    try {
+      const context = document.createElement('canvas').getContext('webgl2');
+      if (!context) track('3D canvas failed');
+      else context.getExtension('WEBGL_lose_context')?.loseContext();
+    } catch { track('3D canvas failed'); }
+  }, []);
+  return <div className="canvas-error">This browser needs WebGL to show your drawing.</div>;
+}
 class SceneBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
+  componentDidCatch() { track('3D canvas failed'); }
   static getDerivedStateFromError() { return { failed: true }; }
   render() { return this.state.failed ? <div className="canvas-error">The 3D canvas couldn’t start. Try a browser with WebGL enabled. Your drawing sequence is still editable.</div> : this.props.children; }
 }
 export default function Scene(props: Parameters<typeof Drawing>[0] & { cameraReset: number }) {
   const [ready, setReady] = useState(false);
-  return <SceneBoundary><Canvas shadows dpr={[1, 1.75]} onCreated={() => setReady(true)} gl={{ antialias: true }} fallback={<div className="canvas-error">This browser needs WebGL to show your drawing.</div>}>
+  return <SceneBoundary><Canvas shadows dpr={[1, 1.75]} onCreated={() => setReady(true)} gl={{ antialias: true }} fallback={<CanvasUnavailable/>}>
     <color attach="background" args={['#f0f2e9']}/><fog attach="fog" args={['#f0f2e9', 25, 65]}/>
     <PerspectiveCamera key={`camera-${props.cameraReset}-${props.mode}`} makeDefault position={props.mode === 'surface' ? [6, 8, 10] : [8, 6, 10]} fov={40}/>
     <OrbitControls key={`controls-${props.cameraReset}-${props.mode}`} makeDefault target={props.mode === 'surface' ? [0, 0, 0] : [0, 2, 0]} minDistance={3} maxDistance={50} enableDamping/>

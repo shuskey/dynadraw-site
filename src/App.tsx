@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Delete, ArrowUpRight, RotateCw, RotateCcw, Play, Pause, Undo2, Redo2, Trash2, Plus, ChevronDown, Check, Save, Expand, X, HelpCircle, Sparkles, Box, MousePointer2, Crosshair, PencilLine, Eraser } from 'lucide-react';
 import Scene from './Scene';
+import { track } from './analytics';
 import { ObjectChooser, ObjectSettings } from './ObjectChooser';
 import { action, colors, detail, evaluate, isContinuous, label, makeExample, MAX_ACTIONS, parseDrawingDocument, type Action, type DrawingDocument, type DrawingMode } from './engine';
 
@@ -32,13 +33,16 @@ export default function App() {
   const selected = editor.actions.find(a => a.id === editor.selected);
   function notify(message: string) { setToast(message); }
   useEffect(() => { if (toast) { const t = setTimeout(() => setToast(''), 3200); return () => clearTimeout(t); } }, [toast]);
-  function commit(next: Editor) { setPast(p => [...p.slice(-49), editor]); setFuture([]); setEditor(next); }
+  function commit(next: Editor) { track('Started creating'); setPast(p => [...p.slice(-49), editor]); setFuture([]); setEditor(next); }
   function insert(item: Action) {
     if (editor.actions.length >= MAX_ACTIONS) return notify('This prototype supports up to 80 actions.');
+    if (item.kind === 'object') track('Added object');
+    if (item.kind === 'draw') track('Used Draw');
+    if (isContinuous(item)) track('Used continuous motion');
     const actions = [...editor.actions]; actions.splice(editor.cursor, 0, item);
     commit({ ...editor, actions, cursor: editor.cursor + 1, selected: item.id });
   }
-  function update(patch: Partial<Action>) { if (selected) commit({ ...editor, actions: editor.actions.map(a => a.id === selected.id ? { ...a, ...patch } : a) }); }
+  function update(patch: Partial<Action>) { if (patch.continuous === true) track('Used continuous motion'); if (selected) commit({ ...editor, actions: editor.actions.map(a => a.id === selected.id ? { ...a, ...patch } : a) }); }
   function moveCursor(direction: -1 | 1) {
     setEditor(e => ({ ...e, selected: null, cursor: Math.max(0, Math.min(e.actions.length, e.cursor + direction)) }));
   }
@@ -50,10 +54,11 @@ export default function App() {
   function undo() { if (!past.length) return; const prev = past[past.length - 1]; setFuture(f => [editor, ...f]); setPast(p => p.slice(0, -1)); setEditor(prev); }
   function redo() { if (!future.length) return; const next = future[0]; setPast(p => [...p, editor]); setFuture(f => f.slice(1)); setEditor(next); }
   function chooseExample(name: string) {
+    track('Used example');
     const actions = makeExample(name); commit({ ...editor, actions, cursor: actions.length, selected: null }); setTitle(name); setReset(v => v + 1); setCameraReset(v => v + 1); setExamplesOpen(false);
   }
   function changeMode(mode: DrawingMode) { if (mode !== editor.mode) commit({ ...editor, mode }); }
-  function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ actions: editor.actions, mode: editor.mode })); notify('Drawing saved in this browser'); } catch { notify('Browser storage is unavailable. Please enable it to save.'); } }
+  function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ actions: editor.actions, mode: editor.mode })); track('Saved drawing'); notify('Drawing saved in this browser'); } catch { notify('Browser storage is unavailable. Please enable it to save.'); } }
   useEffect(() => {
     function key(event: KeyboardEvent) {
       if ((event.target as HTMLElement)?.closest('input, select, textarea, [contenteditable="true"]') || help || objectsOpen || motionOpen) return;
