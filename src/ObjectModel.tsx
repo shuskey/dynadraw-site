@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { CanvasTexture, DoubleSide, Group, IcosahedronGeometry, SRGBColorSpace, Shape } from 'three';
 import type { evaluate, ObjectInstance } from './engine';
 import type { ModelId } from './models';
+import Dragon from './Dragon';
 import { RocketHeading } from './rocketHeading';
 
 function World() {
@@ -37,6 +38,7 @@ function Rocket() {
   return <group><mesh castShadow><cylinderGeometry args={[0.27,0.32,1.05,20]}/><meshStandardMaterial color="#f2eee2" roughness={0.45}/></mesh><mesh position={[0,0.79,0]} castShadow><coneGeometry args={[0.27,0.55,20]}/><meshStandardMaterial color="#ca6557" roughness={0.4}/></mesh><mesh position={[0,0.16,0.273]} rotation={[Math.PI/2,0,0]}><cylinderGeometry args={[0.12,0.12,0.055,20]}/><meshStandardMaterial color="#5d9db6" metalness={0.3} roughness={0.2}/></mesh>{[0,Math.PI*2/3,Math.PI*4/3].map(angle => <group key={angle} rotation={[0,angle,0]}><mesh position={[0,-0.4,0.32]} rotation={[0.25,0,0]} castShadow><boxGeometry args={[0.075,0.5,0.43]}/><meshStandardMaterial color="#ca6557"/></mesh></group>)}<mesh position={[0,-0.62,0]}><coneGeometry args={[0.2,0.3,12]}/><meshStandardMaterial color="#d6ab5d"/></mesh></group>;
 }
 export function ModelGeometry({ model, color }: { model: ModelId; color?: string }) {
+  if (model === 'dragon') return <Dragon/>;
   if (model === 'rocket') return <Rocket/>;
   if (model === 'world') return <World/>;
   if (model === 'asteroid') return <Asteroid/>;
@@ -52,10 +54,10 @@ export default function ObjectModel({ item, drawing, selected }: { item: ObjectI
     const current = drawing.current.objects.find(o => o.id === item.id);
     if (current && group.current) {
       group.current.position.set(...current.position);
-      if (current.model === 'rocket') group.current.quaternion.copy(rocketHeading.current.update(current.position, current.rotation));
+      if ((current.model === 'rocket' || current.model === 'dragon')) group.current.quaternion.copy(rocketHeading.current.update(current.position, current.rotation));
       else group.current.quaternion.set(...current.rotation);
       group.current.scale.setScalar(current.size);
     }
   });
-  return <group ref={group}><ModelGeometry model={item.model} color={item.color}/>{selected && <mesh><sphereGeometry args={[1.15,12,8]}/><meshBasicMaterial color="#9aac6b" wireframe transparent opacity={0.25}/></mesh>}</group>;
+  return <group ref={group}><ModelGeometry model={item.model} color={item.color}/>{selected && <mesh><sphereGeometry args={[item.model === 'dragon' ? 1.7 : 1.15,12,8]}/><meshBasicMaterial color="#9aac6b" wireframe transparent opacity={0.25}/></mesh>}</group>;
 }

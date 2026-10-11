@@ -44,6 +44,7 @@ export function evaluate(actions: Action[], time: number) {
   return { segments, frames, pens, objects };
 }
 export function makeExample(name: string): Action[] {
+  if (name === 'Dragon flight') return [action('extend', { value: 2 }), action('spin', { axis: 'z', value: 18 }), action('turn', { axis: 'z', value: -70 }), action('extend', { value: 1.1 }), action('object', { model: 'dragon', value: 1.2 })];
   if (name === 'Rocket ride') return [...makeExample('Orbit'), action('object', { model: 'rocket', value: 0.7 }), action('draw')];
   if (name === 'Ink orbit') return [...makeExample('Orbit'), action('draw')];
   if (name === 'First steps') return [action('extend'), action('turn'), action('extend'), action('turn', { value: -90, axis: 'x' }), action('color', { color: colors[1] }), action('extend')];

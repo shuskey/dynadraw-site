@@ -1,4 +1,5 @@
 export const models = [
+  { id: 'dragon', name: 'Dragon', inheritsColor: false, description: 'Cobalt, crimson & gold · chasing a pearl' },
   { id: 'rocket', name: 'Rocket', inheritsColor: false, description: 'Built-in red, ivory & blue' },
   { id: 'world', name: 'World', inheritsColor: false, description: 'Built-in ocean & land texture' },
   { id: 'asteroid', name: 'Asteroid', inheritsColor: false, description: 'Built-in rocky material' },

@@ -149,3 +149,14 @@ test('rocket preserves roll through repeated circular flights across the old up-
     assert.ok(new Vector3(0, 0, 1).applyQuaternion(last!).dot(initialDorsal!) > 0.999);
   }
 });
+
+test('Dragon flight can be saved and keeps the pearl-chasing model on its animated path', () => {
+  const actions = makeExample('Dragon flight');
+  assert.ok(validDocument(JSON.parse(JSON.stringify(actions))));
+  const start = evaluate(actions, 0).objects[0];
+  const later = evaluate(actions, 2).objects[0];
+  assert.equal(start.model, 'dragon');
+  assert.equal(start.color, undefined);
+  assert.notDeepEqual(start.position, later.position);
+  assert.equal(start.size, later.size);
+});
